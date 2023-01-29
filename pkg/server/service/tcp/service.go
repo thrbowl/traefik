@@ -62,7 +62,7 @@ func (m *Manager) BuildTCP(rootCtx context.Context, serviceName string) (tcp.Han
 				continue
 			}
 
-			handler, err := tcp.NewProxy(server.Address, duration, conf.LoadBalancer.ProxyProtocol)
+			handler, err := tcp.NewProxy(server.Address, duration, conf.LoadBalancer.ProxyProtocol, conf.LoadBalancer.TProxy)
 			if err != nil {
 				logger.Errorf("In service %q server %q: %v", serviceQualifiedName, server.Address, err)
 				continue

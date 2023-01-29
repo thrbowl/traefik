@@ -98,6 +98,11 @@ func (r *RoundTripperManager) Get(name string) (http.RoundTripper, error) {
 	return nil, fmt.Errorf("servers transport not found %s", name)
 }
 
+type ExtTransport struct {
+	*http.Transport
+	Dialer *net.Dialer
+}
+
 // createRoundTripper creates an http.RoundTripper configured with the Transport configuration settings.
 // For the settings that can't be configured in Traefik it uses the default http.Transport settings.
 // An exception to this is the MaxIdleConns setting as we only provide the option MaxIdleConnsPerHost in Traefik at this point in time.
@@ -116,15 +121,18 @@ func createRoundTripper(cfg *dynamic.ServersTransport) (http.RoundTripper, error
 		dialer.Timeout = time.Duration(cfg.ForwardingTimeouts.DialTimeout)
 	}
 
-	transport := &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
-		DialContext:           dialer.DialContext,
-		MaxIdleConnsPerHost:   cfg.MaxIdleConnsPerHost,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		ReadBufferSize:        64 * 1024,
-		WriteBufferSize:       64 * 1024,
+	transport := &ExtTransport{
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           dialer.DialContext,
+			MaxIdleConnsPerHost:   cfg.MaxIdleConnsPerHost,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			ReadBufferSize:        64 * 1024,
+			WriteBufferSize:       64 * 1024,
+		},
+		Dialer:				   dialer,
 	}
 
 	if cfg.ForwardingTimeouts != nil {

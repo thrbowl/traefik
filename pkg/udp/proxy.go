@@ -4,6 +4,7 @@ import (
 	"io"
 	"net"
 
+	"github.com/traefik/traefik/v2/pkg/config/dynamic"
 	"github.com/traefik/traefik/v2/pkg/log"
 )
 
@@ -11,21 +12,30 @@ import (
 type Proxy struct {
 	// TODO: maybe optimize by pre-resolving it at proxy creation time
 	target string
+	tProxy *dynamic.TProxy
 }
 
 // NewProxy creates a new Proxy.
-func NewProxy(address string) (*Proxy, error) {
-	return &Proxy{target: address}, nil
+func NewProxy(address string, tProxy *dynamic.TProxy) (*Proxy, error) {
+	return &Proxy{target: address, tProxy: tProxy}, nil
 }
 
 // ServeUDP implements the Handler interface.
 func (p *Proxy) ServeUDP(conn *Conn) {
 	log.WithoutContext().Debugf("Handling connection from %s to %s", conn.rAddr, p.target)
+	log.WithoutContext().Infof("NAT:%s:%s:%s", conn.rAddr, conn.listener.pConn.LocalAddr(), p.target)
 
 	// needed because of e.g. server.trackedConnection
 	defer conn.Close()
 
-	connBackend, err := net.Dial("udp", p.target)
+	var connBackend net.Conn
+	var err error
+	if p.tProxy != nil {
+		connBackend, err = dialProxyDestination("udp", conn.rAddr.String(), p.target)
+	} else {
+		connBackend, err = net.Dial("udp", p.target)
+	}
+
 	if err != nil {
 		log.WithoutContext().Errorf("Error while connecting to backend: %v", err)
 		return
@@ -35,6 +45,7 @@ func (p *Proxy) ServeUDP(conn *Conn) {
 	defer connBackend.Close()
 
 	errChan := make(chan error)
+
 	go connCopy(conn, connBackend, errChan)
 	go connCopy(connBackend, conn, errChan)
 
