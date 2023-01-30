@@ -61,7 +61,7 @@ func (m *Manager) BuildUDP(rootCtx context.Context, serviceName string) (udp.Han
 				continue
 			}
 
-			handler, err := udp.NewProxy(server.Address)
+			handler, err := udp.NewProxy(server.Address, conf.LoadBalancer.TProxy)
 			if err != nil {
 				srvLogger.Error().Err(err).Msg("Failed to create server")
 				continue

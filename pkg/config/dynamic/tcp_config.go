@@ -78,6 +78,7 @@ type TCPServersLoadBalancer struct {
 	TerminationDelay *int           `json:"terminationDelay,omitempty" toml:"terminationDelay,omitempty" yaml:"terminationDelay,omitempty" export:"true"`
 	ProxyProtocol    *ProxyProtocol `json:"proxyProtocol,omitempty" toml:"proxyProtocol,omitempty" yaml:"proxyProtocol,omitempty" label:"allowEmpty" file:"allowEmpty" kv:"allowEmpty" export:"true"`
 	Servers          []TCPServer    `json:"servers,omitempty" toml:"servers,omitempty" yaml:"servers,omitempty" label-slice-as-struct:"server" export:"true"`
+	TProxy           *TProxy        `json:"tProxy,omitempty" toml:"tProxy,omitempty" yaml:"tProxy,omitempty" label:"allowEmpty" file:"allowEmpty" kv:"allowEmpty" export:"true"`
 }
 
 // SetDefaults Default values for a TCPServersLoadBalancer.

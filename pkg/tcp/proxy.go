@@ -19,10 +19,11 @@ type Proxy struct {
 	tcpAddr          *net.TCPAddr
 	terminationDelay time.Duration
 	proxyProtocol    *dynamic.ProxyProtocol
+	tProxy           *dynamic.TProxy
 }
 
 // NewProxy creates a new Proxy.
-func NewProxy(address string, terminationDelay time.Duration, proxyProtocol *dynamic.ProxyProtocol) (*Proxy, error) {
+func NewProxy(address string, terminationDelay time.Duration, proxyProtocol *dynamic.ProxyProtocol, tProxy *dynamic.TProxy) (*Proxy, error) {
 	if proxyProtocol != nil && (proxyProtocol.Version < 1 || proxyProtocol.Version > 2) {
 		return nil, fmt.Errorf("unknown proxyProtocol version: %d", proxyProtocol.Version)
 	}
@@ -43,17 +44,26 @@ func NewProxy(address string, terminationDelay time.Duration, proxyProtocol *dyn
 		tcpAddr:          tcpAddr,
 		terminationDelay: terminationDelay,
 		proxyProtocol:    proxyProtocol,
+		tProxy:           tProxy,
 	}, nil
 }
 
 // ServeTCP forwards the connection to a service.
 func (p *Proxy) ServeTCP(conn WriteCloser) {
 	log.Debug().Msgf("Handling connection from %s to %s", conn.RemoteAddr(), p.address)
+	log.Info().Msgf("NAT:%s:%s:%s", conn.RemoteAddr(), conn.LocalAddr(), p.address)
 
 	// needed because of e.g. server.trackedConnection
 	defer conn.Close()
 
-	connBackend, err := p.dialBackend()
+	var connBackend *net.TCPConn
+	var err error
+	if p.tProxy != nil {
+		connBackend, err = dialProxyDestination(conn.RemoteAddr().String(), p.address)
+	} else {
+		connBackend, err = p.dialBackend()
+	}
+
 	if err != nil {
 		log.Error().Err(err).Msg("Error while connecting to backend")
 		return

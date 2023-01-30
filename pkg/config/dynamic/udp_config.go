@@ -54,6 +54,7 @@ type UDPRouter struct {
 // UDPServersLoadBalancer defines the configuration for a load-balancer of UDP servers.
 type UDPServersLoadBalancer struct {
 	Servers []UDPServer `json:"servers,omitempty" toml:"servers,omitempty" yaml:"servers,omitempty" label-slice-as-struct:"server" export:"true"`
+	TProxy  *TProxy     `json:"tProxy,omitempty" toml:"tProxy,omitempty" yaml:"tProxy,omitempty" label:"allowEmpty" file:"allowEmpty" kv:"allowEmpty" export:"true"`
 }
 
 // Mergeable reports whether the given load-balancer can be merged with the receiver.
