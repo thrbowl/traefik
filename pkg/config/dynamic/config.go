@@ -35,3 +35,15 @@ type TLSConfiguration struct {
 	Options      map[string]tls.Options `json:"options,omitempty" toml:"options,omitempty" yaml:"options,omitempty" export:"true"`
 	Stores       map[string]tls.Store   `json:"stores,omitempty" toml:"stores,omitempty" yaml:"stores,omitempty" export:"true"`
 }
+
+// TProxy holds the Transparent Proxy configuration.
+type TProxy struct {
+	InBind bool `json:"inBind,omitempty" toml:"inBind,omitempty" yaml:"inBind,omitempty" export:"true"`
+	Mark   int  `json:"mark,omitempty" toml:"mark,omitempty" yaml:"mark,omitempty" export:"true"`
+}
+
+// SetDefaults Default values for a TProxy.
+func (p *TProxy) SetDefaults() {
+	p.InBind = false
+	p.Mark = 0
+}

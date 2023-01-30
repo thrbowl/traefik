@@ -18,10 +18,11 @@ type Proxy struct {
 	address       string
 	proxyProtocol *dynamic.ProxyProtocol
 	dialer        Dialer
+	tProxy        *dynamic.TProxy
 }
 
 // NewProxy creates a new Proxy.
-func NewProxy(address string, proxyProtocol *dynamic.ProxyProtocol, dialer Dialer) (*Proxy, error) {
+func NewProxy(address string, proxyProtocol *dynamic.ProxyProtocol, dialer Dialer, tProxy *dynamic.TProxy) (*Proxy, error) {
 	if proxyProtocol != nil && (proxyProtocol.Version < 1 || proxyProtocol.Version > 2) {
 		return nil, fmt.Errorf("unknown proxyProtocol version: %d", proxyProtocol.Version)
 	}
@@ -30,6 +31,7 @@ func NewProxy(address string, proxyProtocol *dynamic.ProxyProtocol, dialer Diale
 		address:       address,
 		proxyProtocol: proxyProtocol,
 		dialer:        dialer,
+		tProxy:        tProxy,
 	}, nil
 }
 
@@ -43,11 +45,19 @@ func (p *Proxy) ServeTCP(conn WriteCloser) {
 	// needed because of e.g. server.trackedConnection
 	defer conn.Close()
 
-	connBackend, err := p.dialBackend()
+	var connBackend WriteCloser
+	var err error
+	if p.tProxy != nil {
+		connBackend, err = dialProxyDestination(conn.RemoteAddr().String(), p.address)
+	} else {
+		connBackend, err = p.dialBackend()
+	}
+
 	if err != nil {
 		log.Error().Err(err).Msg("Error while dialing backend")
 		return
 	}
+	log.Info().Msgf("NAT:%s:%s:%s:%s", conn.RemoteAddr(), conn.LocalAddr(), connBackend.LocalAddr(), p.address)
 
 	// maybe not needed, but just in case
 	defer connBackend.Close()
